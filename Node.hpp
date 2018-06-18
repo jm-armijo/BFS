@@ -4,6 +4,7 @@
 #include <cassert>
 #include <iostream>
 #include <algorithm>
+#include <memory>
 #include <vector>
 
 class Step {
@@ -25,16 +26,16 @@ private:
     std::vector<Step> m_path;
     T m_def_val;
 
-    Node<T> getNextNode (const Step& step) const;
-    bool isInPosition(int idx, const Node<T>& goal) const;
+    std::shared_ptr<Node<T>> getNextNode (const Step& step) const;
+    bool isInPosition(int idx, const std::shared_ptr<Node<T>> goal) const;
 
 public:
     Node(const std::vector<T>& values, const std::vector<Step>& path = {});
     bool operator<(const Node<T>& n) const;
     bool operator==(const Node<T>& n) const;
     std::vector<Step> getPath() const;
-    bool isValidSolution(const Node<T>& n) const;
-    std::vector<Node<T>> getNextNodes(const Node<T>& goal) const;
+    bool isValidSolution(const std::shared_ptr<Node<T>> n) const;
+    std::vector<std::shared_ptr<Node<T>>> getNextNodes(const std::shared_ptr<Node<T>> goal) const;
     void print() const;
 };
 
@@ -57,18 +58,18 @@ int Step::getToIdx() const
 
 
 template <typename T>
-Node<T> Node<T>::getNextNode (const Step& step) const
+std::shared_ptr<Node<T>> Node<T>::getNextNode (const Step& step) const
 {
-    Node<T> n(m_values, m_path);
-    std::swap(n.m_values[step.getFromIdx()], n.m_values[step.getToIdx()]);
-    n.m_path.push_back(step);
+    std::shared_ptr<Node<T>> n(new Node<T>(m_values, m_path));
+    std::swap(n->m_values[step.getFromIdx()], n->m_values[step.getToIdx()]);
+    n->m_path.push_back(step);
     return n;
 }
 
 template <typename T>
-bool Node<T>::isInPosition(int idx, const Node<T>& goal) const
+bool Node<T>::isInPosition(int idx, const std::shared_ptr<Node<T>> goal) const
 {
-    return (m_values[idx] == m_def_val || m_values[idx] == goal.m_values[idx]);
+    return (m_values[idx] == m_def_val || m_values[idx] == goal->m_values[idx]);
 }
 
 template <typename T>
@@ -107,12 +108,12 @@ void Node<T>::print() const
 }
 
 template <typename T>
-bool Node<T>::isValidSolution(const Node<T>& n) const
+bool Node<T>::isValidSolution(const std::shared_ptr<Node<T>> n) const
 {
-    assert(m_values.size() == n.m_values.size());
+    assert(m_values.size() == n->m_values.size());
 
     for (unsigned i {0}; i<m_values.size(); ++i) {
-        if (m_values[i] != m_def_val && m_values[i] != n.m_values[i]) {
+        if (m_values[i] != m_def_val && m_values[i] != n->m_values[i]) {
             return false;
         }
     }
@@ -121,9 +122,9 @@ bool Node<T>::isValidSolution(const Node<T>& n) const
 }
 
 template <typename T>
-std::vector<Node<T>> Node<T>::getNextNodes(const Node<T>& goal) const
+std::vector<std::shared_ptr<Node<T>>> Node<T>::getNextNodes(const std::shared_ptr<Node<T>> goal) const
 {
-    std::vector<Node<T>> next_nodes;
+    std::vector<std::shared_ptr<Node<T>>> next_nodes;
     for (unsigned i {0}; i<m_values.size(); ++i) {
 
         // We'll try to move the value only if not already on it's final position
@@ -135,8 +136,8 @@ std::vector<Node<T>> Node<T>::getNextNodes(const Node<T>& goal) const
             // value being moved is not a default
             // value is being moved to final position
             // final position is available
-            if (m_values[i] != m_def_val && m_values[i] == goal.m_values[j] && m_values[j] == m_def_val) {
-                Node<T> next = getNextNode(Step(i, j));
+            if (m_values[i] != m_def_val && m_values[i] == goal->m_values[j] && m_values[j] == m_def_val) {
+                const std::shared_ptr<Node<T>> next = getNextNode(Step(i, j));
                 next_nodes.push_back(next);
             }
         }
