@@ -27,15 +27,15 @@ private:
     T m_def_val;
 
     std::shared_ptr<Node<T>> getNextNode (const Step& step) const;
-    bool isInPosition(int idx, const std::shared_ptr<Node<T>> goal) const;
+    bool isInPosition(int idx, const Node<T>* goal) const;
 
 public:
     Node(const std::vector<T>& values, const std::vector<Step>& path = {});
     bool operator<(const Node<T>& n) const;
     bool operator==(const Node<T>& n) const;
     std::vector<Step> getPath() const;
-    bool isValidSolution(const std::shared_ptr<Node<T>> n) const;
-    std::vector<std::shared_ptr<Node<T>>> getNextNodes(const std::shared_ptr<Node<T>> goal) const;
+    bool isValidSolution(const Node<T>* n) const;
+    std::vector<std::shared_ptr<Node<T>>> getNextNodes(const Node<T>* goal) const;
     void print() const;
 };
 
@@ -60,6 +60,7 @@ int Step::getToIdx() const
 template <typename T>
 std::shared_ptr<Node<T>> Node<T>::getNextNode (const Step& step) const
 {
+    // Cannot use make_shared here because that would create a circular dependency.
     std::shared_ptr<Node<T>> n(new Node<T>(m_values, m_path));
     std::swap(n->m_values[step.getFromIdx()], n->m_values[step.getToIdx()]);
     n->m_path.push_back(step);
@@ -67,7 +68,7 @@ std::shared_ptr<Node<T>> Node<T>::getNextNode (const Step& step) const
 }
 
 template <typename T>
-bool Node<T>::isInPosition(int idx, const std::shared_ptr<Node<T>> goal) const
+bool Node<T>::isInPosition(int idx, const Node<T>* goal) const
 {
     return (m_values[idx] == m_def_val || m_values[idx] == goal->m_values[idx]);
 }
@@ -108,7 +109,7 @@ void Node<T>::print() const
 }
 
 template <typename T>
-bool Node<T>::isValidSolution(const std::shared_ptr<Node<T>> n) const
+bool Node<T>::isValidSolution(const Node<T>* n) const
 {
     assert(m_values.size() == n->m_values.size());
 
@@ -122,7 +123,7 @@ bool Node<T>::isValidSolution(const std::shared_ptr<Node<T>> n) const
 }
 
 template <typename T>
-std::vector<std::shared_ptr<Node<T>>> Node<T>::getNextNodes(const std::shared_ptr<Node<T>> goal) const
+std::vector<std::shared_ptr<Node<T>>> Node<T>::getNextNodes(const Node<T>* goal) const
 {
     std::vector<std::shared_ptr<Node<T>>> next_nodes;
     for (unsigned i {0}; i<m_values.size(); ++i) {
